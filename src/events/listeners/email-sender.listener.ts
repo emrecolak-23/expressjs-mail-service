@@ -4,7 +4,7 @@ import { Listener } from "./base.listener";
 import { EventType } from "./event.types";
 import { ExceptionHandlerPublisher } from "../publishers/exception-handler.publisher";
 import { replacePlaceHolder } from "../../utils/helpers";
-import { ConsulInstance } from "../../config/consul";
+import Mailer from "../../services/Mailer";
 
 enum Channels {
   EMAIL_SEND = "mail-sender",
@@ -40,7 +40,6 @@ export class EmailSender extends Listener {
 
       const message = JSON.parse(msg?.content.toString());
       let kvConfig = `config/MailService/${message.type}/${message.language}`;
-      console.log(kvConfig);
       let consulMailTemplate: any;
       consulMailTemplate = await this.consulClient.kv.get(kvConfig);
       if (!consulMailTemplate) {
@@ -59,20 +58,34 @@ export class EmailSender extends Listener {
         message.properties
       );
       console.log(message, "message");
-      await this.emailService.sendEmail(
+      // const emailResponse = await this.emailService.sendEmail(
+      //   message.destination,
+      //   templateReplaced,
+      //   message.userType
+      // );
+
+      const mailer = new Mailer(
+        message.userType === UserType.INMIDI
+          ? `inmidi.de wissen`
+          : `isteyim.com bilgi`,
         message.destination,
-        templateReplaced,
-        message.userType
+        message.userType === UserType.INMIDI
+          ? `inmidi.de wissen`
+          : `isteyim.com bilgi`,
+        templateReplaced
       );
+
+      await mailer.send();
+
+      console.log(mailer, "response email sent");
       this.channel!.ack(msg);
     } catch (err3: any) {
+      console.log(err3, "email sent error");
       this.handleErrors(type, msg, err3);
     }
   }
 
   async handleErrors(type: string, msg: ConsumeMessage, error: Error) {
-    console.error(error);
-    this.channel!.nack(msg, false, false);
     new ExceptionHandlerPublisher(this.channel).publish({
       messageId: uuidv4(),
       body: {
@@ -83,5 +96,6 @@ export class EmailSender extends Listener {
       },
       source: "exception-handler-service",
     });
+    this.channel!.nack(msg, false, false);
   }
 }

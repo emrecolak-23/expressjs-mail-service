@@ -13,10 +13,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mail_1 = __importDefault(require("@sendgrid/mail"));
-const sendgridKey = process.env.SEND_GRID_KEY;
 const fromEmail = {
     name: "Isteyim.com Destek",
-    email: "info@isteyim.com"
+    email: "user@isteyiminfo.com",
 };
 class Mailer {
     constructor(subject, recipients, content, html) {
@@ -32,14 +31,20 @@ class Mailer {
     }
     send() {
         return __awaiter(this, void 0, void 0, function* () {
-            mail_1.default.setApiKey(sendgridKey);
-            yield mail_1.default.send({
-                to: this.recipients,
-                from: this.from_email,
-                subject: this.subject,
-                text: this.content,
-                html: this.html
-            });
+            try {
+                const sendgridKey = process.env.SEND_GRID_KEY;
+                mail_1.default.setApiKey(sendgridKey);
+                yield mail_1.default.send({
+                    to: this.recipients,
+                    from: this.from_email.email,
+                    subject: this.subject,
+                    text: this.content,
+                    html: this.html,
+                });
+            }
+            catch (err) {
+                console.log(err.response.body, "err");
+            }
         });
     }
 }

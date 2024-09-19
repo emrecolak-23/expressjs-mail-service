@@ -1,10 +1,11 @@
-import express from "express";
+// import express from "express";
 import { ConsulInstance } from "./config/consul";
 import dotenv from "dotenv";
 import EmailService from "./services/Aws-Mailer";
 import { EmailSender } from "./events/listeners/email-sender.listener";
 import { rabbitMQ } from "./config/rabbit";
 import path from "path";
+import Mailer from "./services/Mailer";
 
 if (process.env.NODE_ENV !== "production") {
   dotenv.config({ path: path.join(__dirname, "..", ".env.local") });
@@ -14,14 +15,14 @@ if (process.env.NODE_ENV !== "production") {
 
 import { Channel } from "amqplib";
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-const defaultLanguage = process.env.DEFAULT_LANGUAGE || "en";
+// const app = express();
+// const PORT = process.env.PORT || 3000;
+// const defaultLanguage = process.env.DEFAULT_LANGUAGE || "en";
 
-enum Channels {
-  EMAIL_SEND = "mail-sender",
-  ADMIN_NOTIFICATION = "AdminNotification",
-}
+// enum Channels {
+//   EMAIL_SEND = "mail-sender",
+//   ADMIN_NOTIFICATION = "AdminNotification",
+// }
 
 const start = async () => {
   console.log("Starting mail service");
@@ -50,6 +51,22 @@ const start = async () => {
   const channel = rabbitMQ.getChannel() as Channel;
   const emailService = EmailService.getInstance();
   new EmailSender(channel, consulClient, emailService).subscribe();
+
+  // app.listen(PORT, () => {
+  //   console.log(`Mail service is running on port ${PORT}`);
+  // });
 };
+
+// app.post("/test-email", async (req, res) => {
+//   const mailer = new Mailer(
+//     "test",
+//     ["emfi@isteyim.com", "sinan.gcp@gmail.com"],
+//     "test",
+//     "<h1>Yessss</h1>"
+//   );
+
+//   await mailer.send();
+//   res.send("Email sent");
+// });
 
 start();

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
+// import express from "express";
 const consul_1 = require("./config/consul");
 const dotenv_1 = __importDefault(require("dotenv"));
 const Aws_Mailer_1 = __importDefault(require("./services/Aws-Mailer"));
@@ -25,14 +25,13 @@ if (process.env.NODE_ENV !== "production") {
 else {
     dotenv_1.default.config();
 }
-const app = (0, express_1.default)();
-const PORT = process.env.PORT || 3000;
-const defaultLanguage = process.env.DEFAULT_LANGUAGE || "en";
-var Channels;
-(function (Channels) {
-    Channels["EMAIL_SEND"] = "mail-sender";
-    Channels["ADMIN_NOTIFICATION"] = "AdminNotification";
-})(Channels || (Channels = {}));
+// const app = express();
+// const PORT = process.env.PORT || 3000;
+// const defaultLanguage = process.env.DEFAULT_LANGUAGE || "en";
+// enum Channels {
+//   EMAIL_SEND = "mail-sender",
+//   ADMIN_NOTIFICATION = "AdminNotification",
+// }
 const start = () => __awaiter(void 0, void 0, void 0, function* () {
     console.log("Starting mail service");
     if (!process.env.AMQP_URI) {
@@ -54,5 +53,18 @@ const start = () => __awaiter(void 0, void 0, void 0, function* () {
     const channel = rabbit_1.rabbitMQ.getChannel();
     const emailService = Aws_Mailer_1.default.getInstance();
     new email_sender_listener_1.EmailSender(channel, consulClient, emailService).subscribe();
+    // app.listen(PORT, () => {
+    //   console.log(`Mail service is running on port ${PORT}`);
+    // });
 });
+// app.post("/test-email", async (req, res) => {
+//   const mailer = new Mailer(
+//     "test",
+//     ["emfi@isteyim.com", "sinan.gcp@gmail.com"],
+//     "test",
+//     "<h1>Yessss</h1>"
+//   );
+//   await mailer.send();
+//   res.send("Email sent");
+// });
 start();

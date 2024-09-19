@@ -8,12 +8,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmailSender = exports.UserType = void 0;
 const uuid_1 = require("uuid");
 const base_listener_1 = require("./base.listener");
 const exception_handler_publisher_1 = require("../publishers/exception-handler.publisher");
 const helpers_1 = require("../../utils/helpers");
+const Mailer_1 = __importDefault(require("../../services/Mailer"));
 var Channels;
 (function (Channels) {
     Channels["EMAIL_SEND"] = "mail-sender";
@@ -37,7 +41,6 @@ class EmailSender extends base_listener_1.Listener {
                 const defaultLanguage = process.env.DEFAULT_LANGUAGE || "en";
                 const message = JSON.parse(msg === null || msg === void 0 ? void 0 : msg.content.toString());
                 let kvConfig = `config/MailService/${message.type}/${message.language}`;
-                console.log(kvConfig);
                 let consulMailTemplate;
                 consulMailTemplate = yield this.consulClient.kv.get(kvConfig);
                 if (!consulMailTemplate) {
@@ -51,18 +54,28 @@ class EmailSender extends base_listener_1.Listener {
                 const emailTemplate = consulMailTemplate.Value;
                 const templateReplaced = (0, helpers_1.replacePlaceHolder)(emailTemplate, message.properties);
                 console.log(message, "message");
-                yield this.emailService.sendEmail(message.destination, templateReplaced, message.userType);
+                // const emailResponse = await this.emailService.sendEmail(
+                //   message.destination,
+                //   templateReplaced,
+                //   message.userType
+                // );
+                const mailer = new Mailer_1.default(message.userType === UserType.INMIDI
+                    ? `inmidi.de wissen`
+                    : `isteyim.com bilgi`, message.destination, message.userType === UserType.INMIDI
+                    ? `inmidi.de wissen`
+                    : `isteyim.com bilgi`, templateReplaced);
+                yield mailer.send();
+                console.log(mailer, "response email sent");
                 this.channel.ack(msg);
             }
             catch (err3) {
+                console.log(err3, "email sent error");
                 this.handleErrors(type, msg, err3);
             }
         });
     }
     handleErrors(type, msg, error) {
         return __awaiter(this, void 0, void 0, function* () {
-            console.error(error);
-            this.channel.nack(msg, false, false);
             new exception_handler_publisher_1.ExceptionHandlerPublisher(this.channel).publish({
                 messageId: (0, uuid_1.v4)(),
                 body: {
@@ -73,6 +86,7 @@ class EmailSender extends base_listener_1.Listener {
                 },
                 source: "exception-handler-service",
             });
+            this.channel.nack(msg, false, false);
         });
     }
 }
